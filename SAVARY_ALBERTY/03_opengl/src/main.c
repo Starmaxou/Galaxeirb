@@ -11,7 +11,7 @@
 #include "text.h"
 #include "particule.h"
 
-#define PRINT_DEBUG 1
+#define PRINT_DEBUG 0
 
 static float g_inertia = 0.5f;
 
@@ -143,11 +143,10 @@ void acc_part_calcul(int index)
 			dY = Particules[i].PosY - Particules[index].PosY;
 			dZ = Particules[i].PosZ - Particules[index].PosZ;
 
-			distance = sqrt( Pow2(Particules[i].PosX - Particules[index].PosX) + Pow2(Particules[i].PosY - Particules[index].PosY) + Pow2(Particules[i].PosX - Particules[index].PosZ));
+			distance = sqrt( Pow2(dX) + Pow2(dY) + Pow2(dZ));
 			sumX = sumX + dX * M * E * (1/Pow3(distance)) * Particules[i].Masse;
 			sumY = sumY + dY * M * E * (1/Pow3(distance)) * Particules[i].Masse;
 			sumZ = sumZ + dZ * M * E * (1/Pow3(distance)) * Particules[i].Masse;
-			//return 0;
 		}
 	}
 
@@ -356,17 +355,15 @@ int main( int argc, char ** argv ) {
 			ShowAxes();
 		}
 
+		gettimeofday( &begin, NULL );
+
+		// Simulation should be computed here
 		ShowParticules();
 		for ( index_loop = 0 ;  index_loop < NB_PARTICULE ; index_loop++){
 			acc_part_calcul(index_loop);
 			update_position(index_loop);
-			SDL_Log("Particule 1 : %f", &Particules[index_loop].PosX);
 		}
-
-		gettimeofday( &begin, NULL );
-
-		// Simulation should be computed here
-
+		
 		gettimeofday( &end, NULL );
 
 		fps = (float)1.0f / ( ( end.tv_sec - begin.tv_sec ) * 1000000.0f + end.tv_usec - begin.tv_usec) * 1000000.0f;
