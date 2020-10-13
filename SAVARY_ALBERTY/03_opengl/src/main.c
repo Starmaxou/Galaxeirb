@@ -13,9 +13,15 @@
 
 #define PRINT_DEBUG 0
 
+#define M  10	//Masse Factor
+#define E  1	//Particles damping factor
+#define ME M*E
+
 static float g_inertia = 0.5f;
 
 static float g_t = 0.1f;
+
+static float point_size = 2.0f;
 
 static float oldCamPos[] = { 0.0f, 0.0f, -45.0f };
 static float oldCamRot[] = { 0.0f, 0.0f, 0.0f };
@@ -87,52 +93,26 @@ int colorGalaxy(int index)
 
 void ShowParticules()
 {
-	
-	glPointSize(2.0f);
-	glBegin( GL_POINTS );
-
-	int i, colorFlag; 
-	float Masse;
+	int i;
+	glPointSize(point_size);
+	glBegin( GL_POINTS ); 
 	for( i = 0 ; i < NB_PARTICULE ; i++)
 	{	
-		colorFlag = colorGalaxy(i);
-
-		if (colorFlag== 1){
+		if (Particules[i].Galaxy == MILKYWAY)
 			glColor3f(5.0f, 3.0f, 0.0f);
-			Particules[i].Galaxy = MILKYWAY;
-		}else if (colorFlag == 0){
+		else
 			glColor3f(0.0f, 3.0f, 5.0f);
-			Particules[i].Galaxy = ANDROMEDA;
-		}else{
-			glColor3f(10.0f, 0.0f, 0.0f);
-		}
+	
 		glVertex3f(Particules[i].PosX, Particules[i].PosY, Particules[i].PosZ);
-		
 	}
 	glEnd();
 }
 
-void DrawParticule(float PosX, float PosY, float PosZ, enum Galaxy_name Galaxy)
+void particule_calcul(int index)
 {
-	glPointSize(2.0f);
-	glBegin( GL_POINTS );
-
-	if (Galaxy == MILKYWAY)
-		glColor3f(5.0f, 3.0f, 0.0f);
-	else if (Galaxy == ANDROMEDA)
-		glColor3f(0.0f, 3.0f, 5.0f);
-	
-	glVertex3f(PosX, PosY, PosZ);
-
-	glEnd();
-}
-
-void acc_part_calcul(int index)
-{
-	float sumX, sumY, sumZ ,dX, dY, dZ, distance;
+	float sumX, sumY, sumZ ,dX, dY, dZ, distance, masse_invDist3;
 	int i;
-	int M = 10;
-	int E = 1;
+	
 
 	sumX = 0;
 	sumY = 0;
@@ -143,23 +123,24 @@ void acc_part_calcul(int index)
 			dY = Particules[i].PosY - Particules[index].PosY;
 			dZ = Particules[i].PosZ - Particules[index].PosZ;
 
-			distance = sqrt( Pow2(dX) + Pow2(dY) + Pow2(dZ));
-			sumX = sumX + dX * M * E * (1/Pow3(distance)) * Particules[i].Masse;
-			sumY = sumY + dY * M * E * (1/Pow3(distance)) * Particules[i].Masse;
-			sumZ = sumZ + dZ * M * E * (1/Pow3(distance)) * Particules[i].Masse;
+			distance = sqrt( Pow2(dX) + Pow2(dY) + Pow2(dZ) );
+			if ( distance < 1.0 ) distance = 1.0;
+
+			masse_invDist3 = Particules[i].Masse * (1/Pow3(distance)) * ME;
+
+			sumX += dX * masse_invDist3;
+			sumY += dY * masse_invDist3;
+			sumZ += dZ * masse_invDist3;
 		}
 	}
 
-	Particules[index].VelX = Particules[index].VelX + sumX;
-	Particules[index].VelY = Particules[index].VelY + sumY;
-	Particules[index].VelZ = Particules[index].VelZ + sumZ;
-}
+	Particules[index].VelX += sumX;
+	Particules[index].VelY += sumY;
+	Particules[index].VelZ += sumZ;
 
-void update_position(int index)
-{
-	Particules[index].PosX = Particules[index].PosX + Particules[index].VelX * g_t;
-	Particules[index].PosY = Particules[index].PosY + Particules[index].VelY * g_t;
-	Particules[index].PosZ = Particules[index].PosZ + Particules[index].VelZ * g_t;
+	Particules[index].PosX += Particules[index].VelX * g_t;
+	Particules[index].PosY += Particules[index].VelY * g_t;
+	Particules[index].PosZ += Particules[index].VelZ * g_t;
 }
 
 int initParticules()
@@ -193,6 +174,15 @@ int initParticules()
 		
 	}
 	fclose(dubFILE);
+
+	for (i = 0 ; i < NB_PARTICULE ; i++){
+		if (colorGalaxy(i)){
+			Particules[i].Galaxy = MILKYWAY;
+		} else {
+			Particules[i].Galaxy = ANDROMEDA;
+		}
+	}
+	
 #if PRINT_DEBUG
 	for (i = 0 ; i < 10 ; i++)
 	{
@@ -360,10 +350,9 @@ int main( int argc, char ** argv ) {
 		// Simulation should be computed here
 		ShowParticules();
 		for ( index_loop = 0 ;  index_loop < NB_PARTICULE ; index_loop++){
-			acc_part_calcul(index_loop);
-			update_position(index_loop);
+			particule_calcul(index_loop);
 		}
-		
+
 		gettimeofday( &end, NULL );
 
 		fps = (float)1.0f / ( ( end.tv_sec - begin.tv_sec ) * 1000000.0f + end.tv_usec - begin.tv_usec) * 1000000.0f;

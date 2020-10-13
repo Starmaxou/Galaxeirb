@@ -3,6 +3,7 @@
 
 #define NB_PARTICULE_TOTAL 81920
 #define NB_PARTICULE 1024
+#define MODULO_PARTICULE NB_PARTICULE_TOTAL/NB_PARTICULE
 
 #define Pow2(_a) (_a*_a)
 #define Pow3(_a) (_a*_a*_a)
