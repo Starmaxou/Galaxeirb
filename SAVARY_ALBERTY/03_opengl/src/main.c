@@ -2,6 +2,7 @@
 #include <stdbool.h>
 #include <math.h>
 #include <sys/time.h>
+#include <omp.h>
 
 #include "GL/glew.h"
 
@@ -12,6 +13,7 @@
 #include "particule.h"
 
 #define PRINT_DEBUG 0
+#define NB_TREADS 4
 
 #define M  10	//Masse Factor
 #define E  1	//Particles damping factor
@@ -112,18 +114,18 @@ void particule_calcul(int index)
 {
 	float sumX, sumY, sumZ ,dX, dY, dZ, distance, masse_invDist3;
 	int i;
-	
 
 	sumX = 0;
 	sumY = 0;
 	sumZ = 0;
+
 	for (i = 0 ; i < NB_PARTICULE ; i++){
 		if (i != index){
 			dX = Particules[i].PosX - Particules[index].PosX;
 			dY = Particules[i].PosY - Particules[index].PosY;
 			dZ = Particules[i].PosZ - Particules[index].PosZ;
 
-			distance = sqrt( Pow2(dX) + Pow2(dY) + Pow2(dZ) );
+			distance = sqrtf( Pow2(dX) + Pow2(dY) + Pow2(dZ) );
 			if ( distance < 1.0 ) distance = 1.0;
 
 			masse_invDist3 = Particules[i].Masse * (1/Pow3(distance)) * ME;
@@ -133,6 +135,7 @@ void particule_calcul(int index)
 			sumZ += dZ * masse_invDist3;
 		}
 	}
+	
 
 	Particules[index].VelX += sumX;
 	Particules[index].VelY += sumY;
@@ -174,7 +177,8 @@ int initParticules()
 		
 	}
 	fclose(dubFILE);
-
+	
+	#pragma omp parallel for
 	for (i = 0 ; i < NB_PARTICULE ; i++){
 		if (colorGalaxy(i)){
 			Particules[i].Galaxy = MILKYWAY;
@@ -204,12 +208,12 @@ int initParticules()
 }
 
 int main( int argc, char ** argv ) {
-
-	int index_loop;
+	
 	SDL_Event event;
 	SDL_Window * window;
 	SDL_DisplayMode current;
-  	
+
+  	int index_loop;
 	int width = 1024;
 	int height = 640;
 
@@ -226,11 +230,16 @@ int main( int argc, char ** argv ) {
 
 	struct timeval begin, end;
 	float fps = 0.0;
+	float fps_max = 0.0;
+	float fps_min = 1000.0;
 	char sfps[40] = "FPS: ";
-
+	char sfpsmax[40] = "Max FPS: ";
+	char sfpsmin[40] = "Min FPS: ";
 /*
  * Start USER Code 0
  */
+	omp_set_num_threads( NB_TREADS );
+
 	if (!initParticules()){
 		SDL_Log("initParticules : OK");
 	}else{
@@ -289,7 +298,7 @@ int main( int argc, char ** argv ) {
 				} else if ( event.key.keysym.sym == SDLK_F2 ) {
 					g_showAxes = !g_showAxes;
 				} else if ( event.key.keysym.sym == SDLK_ESCAPE ) {
- 					done = true;
+ 				 	done = true;
 				}
 			}
 
@@ -349,6 +358,7 @@ int main( int argc, char ** argv ) {
 
 		// Simulation should be computed here
 		ShowParticules();
+		#pragma omp parallel for
 		for ( index_loop = 0 ;  index_loop < NB_PARTICULE ; index_loop++){
 			particule_calcul(index_loop);
 		}
@@ -356,7 +366,12 @@ int main( int argc, char ** argv ) {
 		gettimeofday( &end, NULL );
 
 		fps = (float)1.0f / ( ( end.tv_sec - begin.tv_sec ) * 1000000.0f + end.tv_usec - begin.tv_usec) * 1000000.0f;
+		fps_max = (fps > fps_max)? fps : fps_max;
+		fps_min = (fps < fps_min)? fps : fps_min;
+
 		sprintf( sfps, "FPS : %.4f", fps );
+		sprintf( sfpsmax, "Max FPS : %.4f", fps_max );
+		sprintf( sfpsmin, "Min FPS : %.4f", fps_min );
 
 		glMatrixMode(GL_PROJECTION);
 		glLoadIdentity();
@@ -364,7 +379,9 @@ int main( int argc, char ** argv ) {
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
 
-		DrawText( 10, height - 20, sfps, TEXT_ALIGN_LEFT, RGBA(255, 255, 255, 255) );
+		DrawText( 10, height - 20, sfpsmax, TEXT_ALIGN_LEFT, RGBA(255, 255, 255, 255) );
+		DrawText( 10, height - 40, sfps, TEXT_ALIGN_LEFT, RGBA(255, 255, 255, 255) );
+		DrawText( 10, height - 60, sfpsmin, TEXT_ALIGN_LEFT, RGBA(255, 255, 255, 255) );
 		DrawText( 10, 30, "'F1' : show/hide grid", TEXT_ALIGN_LEFT, RGBA(255, 255, 255, 255) );
 		DrawText( 10, 10, "'F2' : show/hide axes", TEXT_ALIGN_LEFT, RGBA(255, 255, 255, 255) );
 		DrawText (10, 60, " Milky way", TEXT_ALIGN_LEFT, RGBA(200,125,0,255));
