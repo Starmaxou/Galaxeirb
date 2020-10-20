@@ -2,7 +2,7 @@ TARGET 		= opengl
 
 CC 			= gcc
 
-CFLAGS 		= -W -Wall -fopenmp
+CFLAGS 		= -W -Wall -fopenmp -O3
 
 LINKER 		= gcc -o
 
