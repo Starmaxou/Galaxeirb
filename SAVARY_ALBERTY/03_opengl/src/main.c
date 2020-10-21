@@ -34,6 +34,7 @@ static particule_t Particules[NB_PARTICULE];
 
 static bool g_showGrid = true;
 static bool g_showAxes = true;
+static bool g_quit = false;
 
 void ShowParticule();
 
@@ -299,6 +300,8 @@ int main( int argc, char ** argv ) {
 					g_showGrid = !g_showGrid;
 				} else if ( event.key.keysym.sym == SDLK_F2 ) {
 					g_showAxes = !g_showAxes;
+				} else if ( event.key.keysym.sym == SDLK_F3 ) {
+					g_quit = !g_quit;
 				} else if ( event.key.keysym.sym == SDLK_ESCAPE ) {
  				 	done = true;
 				}
@@ -356,6 +359,10 @@ int main( int argc, char ** argv ) {
 			ShowAxes();
 		}
 
+		if (g_quit ) {
+			return 0;
+		}
+
 		gettimeofday( &begin, NULL );
 
 		// Simulation should be computed here
@@ -384,10 +391,11 @@ int main( int argc, char ** argv ) {
 		DrawText( 10, height - 20, sfpsmax, TEXT_ALIGN_LEFT, RGBA(255, 255, 255, 255) );
 		DrawText( 10, height - 40, sfps, TEXT_ALIGN_LEFT, RGBA(255, 255, 255, 255) );
 		DrawText( 10, height - 60, sfpsmin, TEXT_ALIGN_LEFT, RGBA(255, 255, 255, 255) );
+		DrawText( 10, 50, "'esc' : quit", TEXT_ALIGN_LEFT, RGBA(255, 255, 255, 255) );
 		DrawText( 10, 30, "'F1' : show/hide grid", TEXT_ALIGN_LEFT, RGBA(255, 255, 255, 255) );
 		DrawText( 10, 10, "'F2' : show/hide axes", TEXT_ALIGN_LEFT, RGBA(255, 255, 255, 255) );
-		DrawText (10, 60, " Milky way", TEXT_ALIGN_LEFT, RGBA(200,125,0,255));
-		DrawText (10, 80, " Andromeda", TEXT_ALIGN_LEFT, RGBA(0,125,200,255));
+		DrawText (10, 70, " Milky way", TEXT_ALIGN_LEFT, RGBA(200,125,0,255));
+		DrawText (10, 85, " Andromeda", TEXT_ALIGN_LEFT, RGBA(0,125,200,255));
 
 		SDL_GL_SwapWindow( window );
 		SDL_UpdateWindowSurface( window );
