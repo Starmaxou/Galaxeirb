@@ -112,12 +112,13 @@ void ShowParticules()
 	}
 	glEnd();
 }
-
+/*
+*	Calcul des nouvelles coordonnées de la particule "index"
+*/
 void particule_calcul(int index)
 {
 	float sumX, sumY, sumZ ,dX, dY, dZ, distance, masse_invDist3;
 	int i;
-
 	sumX = 0;
 	sumY = 0;
 	sumZ = 0;
@@ -132,18 +133,18 @@ void particule_calcul(int index)
 			if ( distance < 1.0 ) distance = 1.0;
 
 			masse_invDist3 = Particules[i].Masse * (1/Pow3(distance)) * ME;
-
 			sumX += dX * masse_invDist3;
 			sumY += dY * masse_invDist3;
 			sumZ += dZ * masse_invDist3;
 		}
 	}
 	
-
+	//Mise à jour de la vitesse de la particule "index"
 	Particules[index].VelX += sumX;
 	Particules[index].VelY += sumY;
 	Particules[index].VelZ += sumZ;
 
+	//Mise a jour de la position de la particule "index"
 	Particules[index].PosX += Particules[index].VelX * g_t;
 	Particules[index].PosY += Particules[index].VelY * g_t;
 	Particules[index].PosZ += Particules[index].VelZ * g_t;
@@ -151,6 +152,7 @@ void particule_calcul(int index)
 
 int initParticules()
 {
+	// Ouverture du fichier dubinski.tab
 	FILE* dubFILE;
 	dubFILE = fopen("dubinski.tab","r");
 	if (dubFILE == NULL)
@@ -159,8 +161,12 @@ int initParticules()
 		return -1;
 	}
 
-	int i, index;
+	// Initialisation des structures des particules avec les informations du fichier
+	int i, index, mod;
 	index = 0;
+	//Calcul du saut de ligne dans le ficher
+	mod = (NB_PARTICULE != NB_PARTICULE_TOTAL)? NB_PARTICULE_TOTAL / NB_PARTICULE : 1; 
+	
 	for (i = 0 ; i < NB_PARTICULE_TOTAL ; i++)
 	{
 		fscanf(dubFILE, "%f %f %f %f %f %f %f",
@@ -171,10 +177,9 @@ int initParticules()
 			&Particules[index].VelX,
 			&Particules[index].VelY,
 			&Particules[index].VelZ);
-	int mod = NB_PARTICULE_TOTAL / NB_PARTICULE;
-		if ( (i%mod) == 0 )
+	
+		if ((i%mod) == 0)
 		{
-			ShowParticules();
 			index++;
 		}
 		
