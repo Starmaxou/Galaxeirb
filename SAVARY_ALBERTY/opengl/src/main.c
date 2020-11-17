@@ -13,7 +13,7 @@
 #include "particule.h"
 
 #define PRINT_DEBUG 0
-#define NB_TREADS 4
+#define NB_THREADS 4
 
 #define M  10	//Masse Factor
 #define E  1	//Particles damping factor
@@ -23,7 +23,7 @@ static float g_inertia = 0.5f;
 
 static float g_t = 0.1f;
 
-static float point_size = 2.0f;
+static float point_size = 1.0f;
 
 static float oldCamPos[] = { 0.0f, 0.0f, -45.0f };
 static float oldCamRot[] = { 0.0f, 0.0f, 0.0f };
@@ -34,7 +34,7 @@ static particule_t Particules[NB_PARTICULE];
 
 static bool g_showGrid = true;
 static bool g_showAxes = true;
-static bool g_quit = false;
+static bool g_showSimu = true;
 
 void ShowParticule();
 
@@ -86,7 +86,7 @@ void ShowAxes() {
 
 int colorGalaxy(int index)
 {
-	int value = (index * (NB_PARTICULE_TOTAL/NB_PARTICULE - 1));
+	int value = (index * (NB_PARTICULE_TOTAL/NB_PARTICULE));
 	if ( (value >= 0) && (value < 16384) ) return 1;
 	if ( (value >= 16384) && (value < 32768) ) return 0;
 	if ( (value >= 32768) && (value < 40960) ) return 1;
@@ -246,7 +246,7 @@ int main( int argc, char ** argv ) {
 /*
  * Start USER Code 0
  */
-	omp_set_num_threads( NB_TREADS );
+	omp_set_num_threads( NB_THREADS );
 
 	if (!initParticules()){
 		SDL_Log("initParticules : OK");
@@ -305,8 +305,8 @@ int main( int argc, char ** argv ) {
 					g_showGrid = !g_showGrid;
 				} else if ( event.key.keysym.sym == SDLK_F2 ) {
 					g_showAxes = !g_showAxes;
-				} else if ( event.key.keysym.sym == SDLK_F3 ) {
-					g_quit = !g_quit;
+				} else if ( event.key.keysym.sym == SDLK_SPACE ) {
+					g_showSimu = !g_showSimu;
 				} else if ( event.key.keysym.sym == SDLK_ESCAPE ) {
  				 	done = true;
 				}
@@ -364,18 +364,17 @@ int main( int argc, char ** argv ) {
 			ShowAxes();
 		}
 
-		if (g_quit ) {
-			return 0;
-		}
-
 		gettimeofday( &begin, NULL );
 
 		// Simulation should be computed here
 		ShowParticules();
-		#pragma omp parallel for
-		for ( index_loop = 0 ;  index_loop < NB_PARTICULE ; index_loop++){
-			particule_calcul(index_loop);
+		if(g_showSimu){
+			#pragma omp parallel for
+			for ( index_loop = 0 ;  index_loop < NB_PARTICULE ; index_loop++){
+				particule_calcul(index_loop);
+			}
 		}
+
 
 		gettimeofday( &end, NULL );
 
@@ -396,11 +395,12 @@ int main( int argc, char ** argv ) {
 		DrawText( 10, height - 20, sfpsmax, TEXT_ALIGN_LEFT, RGBA(255, 255, 255, 255) );
 		DrawText( 10, height - 40, sfps, TEXT_ALIGN_LEFT, RGBA(255, 255, 255, 255) );
 		DrawText( 10, height - 60, sfpsmin, TEXT_ALIGN_LEFT, RGBA(255, 255, 255, 255) );
-		DrawText( 10, 50, "'esc' : quit", TEXT_ALIGN_LEFT, RGBA(255, 255, 255, 255) );
+		DrawText( 10, 70, "'SPACE' : pause simulation", TEXT_ALIGN_LEFT, RGBA(255, 255, 255, 255) );
+		DrawText( 10, 50, "'ESC' : quit", TEXT_ALIGN_LEFT, RGBA(255, 255, 255, 255) );
 		DrawText( 10, 30, "'F1' : show/hide grid", TEXT_ALIGN_LEFT, RGBA(255, 255, 255, 255) );
 		DrawText( 10, 10, "'F2' : show/hide axes", TEXT_ALIGN_LEFT, RGBA(255, 255, 255, 255) );
-		DrawText (10, 70, " Milky way", TEXT_ALIGN_LEFT, RGBA(200,125,0,255));
-		DrawText (10, 85, " Andromeda", TEXT_ALIGN_LEFT, RGBA(0,125,200,255));
+		DrawText (10, 90, " Milky way", TEXT_ALIGN_LEFT, RGBA(200,125,0,255));
+		DrawText (10, 110, " Andromeda", TEXT_ALIGN_LEFT, RGBA(0,125,200,255));
 
 		SDL_GL_SwapWindow( window );
 		SDL_UpdateWindowSurface( window );
