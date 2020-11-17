@@ -36,3 +36,4 @@ Ces première optimisation on permit d'augmenter le nombre de FPS, mais on vite 
 ![Evolution des FPS](SAVARY_ALBERTY/Pictures/tab1_galaxeirb.png "Evolution des FPS")
 
 ## 4 - Accélération GPU
+![Evolution des FPS CUDA](SAVARY_ALBERTY/Pictures/tab2_galaxeirb.png "Evolution des FPS CUDA")
