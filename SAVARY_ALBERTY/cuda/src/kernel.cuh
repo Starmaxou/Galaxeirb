@@ -3,6 +3,6 @@
 
 #include "particule.h"
 
-void saxpy( int nblocks, int nthreads, int n, particule_t * in, particule_t * out );
+void cuda_calcul_acceleration( int nblocks, int nthreads, int n, particule_t * in, particule_t * out );
 
 #endif

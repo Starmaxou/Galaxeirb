@@ -16,13 +16,11 @@
 #include "particule.h"
 
 #define PRINT_DEBUG 0
-#define NB_TREADS 4
+#define NB_TREADS_OMP 4
 
 #define numThreads 1024	//CUDA define
 
 static float g_inertia = 0.5f;
-
-static float g_t = 0.1f;
 
 static float point_size = 2.0f;
 
@@ -140,89 +138,6 @@ void ShowParticules()
 	glEnd();
 }
 
-void particule_calcul_cuda(void)
-{
-	particule_t * Particule_hostSrc1 = NULL;
-	particule_t * Particule_hostDst1 = NULL;
-
-	particule_t * Particule_deviceSrc1 = NULL;
-	particule_t * Particule_deviceDst1 = NULL;
-
-	Particule_hostSrc1 = (particule_t *)malloc( sizeof( particule_t ) * NB_PARTICULE );
-	Particule_hostDst1 = (particule_t *)malloc( sizeof( particule_t ) * NB_PARTICULE );
-
-	memcpy( Particule_hostSrc1, Particules, sizeof( particule_t ) * NB_PARTICULE );
-
-	cudaError_t cudaStatus;
-
-	cudaStatus = cudaSetDevice( 0 );
-
-	if ( cudaStatus != cudaSuccess ) {
-		SDL_Log( "error: unable to setup cuda device\n");
-	}
-
-	CUDA_MALLOC( (void**)&Particule_deviceSrc1, NB_PARTICULE * sizeof( particule_t ) );
-	CUDA_MALLOC( (void**)&Particule_deviceDst1, NB_PARTICULE * sizeof( particule_t ) );
-
-	CUDA_MEMCPY( Particule_deviceSrc1, Particule_hostSrc1, NB_PARTICULE * sizeof( particule_t ), cudaMemcpyHostToDevice );
-
-	int numBlocks = ( NB_PARTICULE + ( numThreads - 1 ) ) / numThreads;
-	
-	saxpy(numBlocks, numThreads, NB_PARTICULE, Particule_deviceSrc1, Particule_deviceDst1);
-
-	cudaStatus = cudaDeviceSynchronize();
-	
-	if ( cudaStatus != cudaSuccess ) {
-		SDL_Log( "error: unable to synchronize threads\n");
-	}
-
-	CUDA_MEMCPY( Particule_hostDst1, Particule_deviceDst1, NB_PARTICULE * sizeof( particule_t ), cudaMemcpyDeviceToHost );
-	
-	cudaStatus = cudaDeviceReset();
-
-	if (cudaStatus != cudaSuccess) {
-		SDL_Log( "(EE) Unable to reset device\n" );
-	}
-
-	memcpy( Particules, Particule_hostDst1, sizeof( particule_t ) * NB_PARTICULE );
-
-}
-void particule_calcul(int index)
-{
-	float sumX, sumY, sumZ ,dX, dY, dZ, Dij, masse_invDist3;
-	int i;
-
-	sumX = 0;
-	sumY = 0;
-	sumZ = 0;
-
-	for (i = 0 ; i < NB_PARTICULE ; i++){
-		if (i != index){
-			dX = Particules[i].PosX - Particules[index].PosX;
-			dY = Particules[i].PosY - Particules[index].PosY;
-			dZ = Particules[i].PosZ - Particules[index].PosZ;
-
-			Dij = sqrtf( Pow2(dX) + Pow2(dY) + Pow2(dZ) );
-			if ( Dij < 1.0 ) Dij = 1.0;
-
-			masse_invDist3 = Particules[i].Masse * (1/Pow3(Dij)) * ME;
-
-			sumX += dX * masse_invDist3;
-			sumY += dY * masse_invDist3;
-			sumZ += dZ * masse_invDist3;
-		}
-	}
-	
-
-	Particules[index].VelX += sumX;
-	Particules[index].VelY += sumY;
-	Particules[index].VelZ += sumZ;
-
-	Particules[index].PosX += Particules[index].VelX * g_t;
-	Particules[index].PosY += Particules[index].VelY * g_t;
-	Particules[index].PosZ += Particules[index].VelZ * g_t;
-}
-
 int initParticules()
 {
 	FILE* dubFILE;
@@ -245,17 +160,13 @@ int initParticules()
 			&Particules[index].VelX,
 			&Particules[index].VelY,
 			&Particules[index].VelZ);
-	int mod = NB_PARTICULE_TOTAL / NB_PARTICULE;
-		if ( (i%mod) == 0 )
-		{
-			ShowParticules();
-			index++;
-		}
+		int mod = NB_PARTICULE_TOTAL / NB_PARTICULE;
+		if ( (i%mod) == 0 ) index++;
 		
 	}
 	fclose(dubFILE);
 	
-	//#pragma omp parallel for
+	#pragma omp parallel for
 	for (i = 0 ; i < NB_PARTICULE ; i++){
 		if (colorGalaxy(i)){
 			Particules[i].Galaxy = MILKYWAY;
@@ -310,12 +221,39 @@ int main( int argc, char ** argv ) {
 	float fps_max = 0.0;
 	float fps_min = 1000.0;
 	char sfps[40] = "FPS: ";
-	char sfpsmax[40] = "Max FPS: ";
-	char sfpsmin[40] = "Min FPS: ";
+
 /*
  * Start USER Code 0
  */
-	//omp_set_num_threads( NB_TREADS );
+	char sfpsmax[40] = "Max FPS: ";
+	char sfpsmin[40] = "Min FPS: ";
+
+	int numBlocks = ( NB_PARTICULE + ( numThreads - 1 ) ) / numThreads;
+
+	omp_set_num_threads( NB_TREADS_OMP );
+
+	particule_t * Particule_hostSrc = NULL;
+	particule_t * Particule_hostDst = NULL;
+
+	particule_t * Particule_deviceSrc = NULL;
+	particule_t * Particule_deviceDst = NULL;
+
+	Particule_hostSrc = (particule_t *)malloc( sizeof( particule_t ) * NB_PARTICULE );
+	Particule_hostDst = (particule_t *)malloc( sizeof( particule_t ) * NB_PARTICULE );
+	SDL_Log("Allocation environnement : OK");
+
+	cudaError_t cudaStatus;
+
+	cudaStatus = cudaSetDevice( 0 );
+
+	if ( cudaStatus != cudaSuccess ) {
+		SDL_Log( "error: unable to setup cuda device\n");
+	}
+	SDL_Log("Setup CUDA device : OK");
+
+	CUDA_MALLOC( (void**)&Particule_deviceSrc, NB_PARTICULE * sizeof( particule_t ) );
+	CUDA_MALLOC( (void**)&Particule_deviceDst, NB_PARTICULE * sizeof( particule_t ) );
+	SDL_Log("Allocation CUDA : OK");
 
 	if (!initParticules()){
 		SDL_Log("initParticules : OK");
@@ -323,6 +261,10 @@ int main( int argc, char ** argv ) {
 		SDL_Log("initParticules : KO");
 		return -1;
 	}
+
+	CUDA_MEMCPY( Particule_deviceDst, Particules, NB_PARTICULE * sizeof( particule_t ), cudaMemcpyHostToDevice );
+	SDL_Log("Initialisation deviceDst");
+	SDL_Log("Init : OK \t Nb Particules : %d", NB_PARTICULE);
 /*
  * End USER Code 0
  */
@@ -337,10 +279,7 @@ int main( int argc, char ** argv ) {
 		return -1;
 	}
 
-	window = SDL_CreateWindow( "SDL", 	SDL_WINDOWPOS_CENTERED, 
-										SDL_WINDOWPOS_CENTERED, 
-										width, height, 
-										SDL_WINDOW_OPENGL );
+	window = SDL_CreateWindow( "SDL", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height, SDL_WINDOW_OPENGL );
   
 	SDL_GLContext glWindow = SDL_GL_CreateContext( window );
 
@@ -432,24 +371,34 @@ int main( int argc, char ** argv ) {
 		}
 
 		gettimeofday( &begin, NULL );
-
+/*
+ * Start USER Code 1
+ */
 		// Simulation should be computed here
 		ShowParticules();
 
-		particule_calcul_cuda();
-/*
-		#pragma omp parallel for
-		for ( index_loop = 0 ;  index_loop < NB_PARTICULE ; index_loop++){
-			particule_calcul(index_loop);
+		CUDA_MEMCPY( Particule_deviceSrc, Particules, NB_PARTICULE * sizeof( particule_t ), cudaMemcpyHostToDevice );
+	
+		cuda_calcul_acceleration(numBlocks, numThreads, NB_PARTICULE, Particule_deviceSrc, Particule_deviceDst);
+
+		CUDA_MEMCPY( Particules, Particule_deviceDst, NB_PARTICULE * sizeof( particule_t ), cudaMemcpyDeviceToHost );
+
+		cudaStatus = cudaDeviceSynchronize();
+	
+		if ( cudaStatus != cudaSuccess ) {
+			SDL_Log( "error: unable to synchronize threads\n");
 		}
-		particule_calcul_cuda();
-*/
+/*
+ * Start USER Code 1
+ */
+
 		gettimeofday( &end, NULL );
 
 		fps = (float)1.0f / ( ( end.tv_sec - begin.tv_sec ) * 1000000.0f + end.tv_usec - begin.tv_usec) * 1000000.0f;
 		fps_max = (fps > fps_max)? fps : fps_max;
 		fps_min = (fps < fps_min)? fps : fps_min;
 
+		
 		sprintf( sfps, "FPS : %.4f", fps );
 		sprintf( sfpsmax, "Max FPS : %.4f", fps_max );
 		sprintf( sfpsmin, "Min FPS : %.4f", fps_min );
@@ -465,11 +414,19 @@ int main( int argc, char ** argv ) {
 		DrawText( 10, height - 60, sfpsmin, TEXT_ALIGN_LEFT, RGBA(255, 255, 255, 255) );
 		DrawText( 10, 30, "'F1' : show/hide grid", TEXT_ALIGN_LEFT, RGBA(255, 255, 255, 255) );
 		DrawText( 10, 10, "'F2' : show/hide axes", TEXT_ALIGN_LEFT, RGBA(255, 255, 255, 255) );
-		DrawText (10, 60, " Milky way", TEXT_ALIGN_LEFT, RGBA(200,125,0,255));
-		DrawText (10, 80, " Andromeda", TEXT_ALIGN_LEFT, RGBA(0,125,200,255));
+		DrawText (10, 60, " Milky way", TEXT_ALIGN_LEFT, RGBA(255,150,0,255));
+		DrawText (10, 80, " Andromeda", TEXT_ALIGN_LEFT, RGBA(0,150,255,255));
 
 		SDL_GL_SwapWindow( window );
 		SDL_UpdateWindowSurface( window );
+	}
+
+	SDL_Log("Fermeture Simulation");
+
+	//Reset du périphérique CUDA
+	cudaStatus = cudaDeviceReset();
+	if (cudaStatus != cudaSuccess) {
+		SDL_Log( "(EE) Unable to reset device\n" );
 	}
 
 	SDL_GL_DeleteContext( glWindow );

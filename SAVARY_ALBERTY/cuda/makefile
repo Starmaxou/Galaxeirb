@@ -1,6 +1,6 @@
 TARGET 		= cuda
 
-CC 			= g++
+CC 		= g++
 NVCC 		= nvcc
 LINKER 		= g++ -o
 
