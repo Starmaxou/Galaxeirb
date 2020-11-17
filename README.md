@@ -2,6 +2,13 @@
 Projet MI205
 Simulation de colision de galaxy
 
+L'objectif de ce projet est de réaliser la simulation de la collision de deux galaxies, la nôtre la voie lactée et Andromède notre voisine la plus proche, cette collision aura lieu dans 4 milliards d'années.
+
+Ce projet a été réaliser sur uen carte de développement **NVIDIA Jetson KT1**
+<center>
+	<img src="Pictures/../SAVARY_ALBERTY/Pictures/NVIDIA_Jetson.jpg" width="300">
+</center>
+
 ## 1 - Sans optimisation
 - Lecture du fichier dubinski.tab : OK
 - Affichage des galaxies : OK
@@ -33,6 +40,7 @@ Simulation de colision de galaxy
 		}
 ```
 Ces première optimisation on permit d'augmenter le nombre de FPS, mais on vite atteint leurs limites.
+
 ![Evolution des FPS](SAVARY_ALBERTY/Pictures/tab1_galaxeirb.png "Evolution des FPS")
 
 ## 4 - Accélération GPU
