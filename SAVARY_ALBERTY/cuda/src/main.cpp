@@ -109,9 +109,8 @@ void ShowAxes() {
 
 }
 
-int colorGalaxy(int index)
-{
-	int value = (index * (NB_PARTICULE_TOTAL/NB_PARTICULE - 1));
+int colorGalaxy(int index) {
+	int value = (index * (NB_PARTICULE_TOTAL/NB_PARTICULE));
 	if ( (value >= 0) && (value < 16384) ) return 1;
 	if ( (value >= 16384) && (value < 32768) ) return 0;
 	if ( (value >= 32768) && (value < 40960) ) return 1;
@@ -121,8 +120,7 @@ int colorGalaxy(int index)
 	return -1;
 }
 
-void ShowParticules()
-{
+void ShowParticules() {
 	int i;
 	glPointSize(point_size);
 	glBegin( GL_POINTS ); 
@@ -138,8 +136,7 @@ void ShowParticules()
 	glEnd();
 }
 
-int initParticules()
-{
+int initParticules() {
 	FILE* dubFILE;
 	dubFILE = fopen("dubinski.tab","r");
 	if (dubFILE == NULL)
@@ -168,7 +165,7 @@ int initParticules()
 	
 	#pragma omp parallel for
 	for (i = 0 ; i < NB_PARTICULE ; i++){
-		if (colorGalaxy(i)){
+		if(colorGalaxy(i)){
 			Particules[i].Galaxy = MILKYWAY;
 		} else {
 			Particules[i].Galaxy = ANDROMEDA;
@@ -389,15 +386,20 @@ int main( int argc, char ** argv ) {
 			SDL_Log( "error: unable to synchronize threads\n");
 		}
 /*
- * Start USER Code 1
+ * End USER Code 1
  */
 
 		gettimeofday( &end, NULL );
 
 		fps = (float)1.0f / ( ( end.tv_sec - begin.tv_sec ) * 1000000.0f + end.tv_usec - begin.tv_usec) * 1000000.0f;
+/*
+ * Start USER Code 2
+ */
 		fps_max = (fps > fps_max)? fps : fps_max;
 		fps_min = (fps < fps_min)? fps : fps_min;
-
+/*
+ * End USER Code 2
+ */
 		
 		sprintf( sfps, "FPS : %.4f", fps );
 		sprintf( sfpsmax, "Max FPS : %.4f", fps_max );
@@ -420,7 +422,9 @@ int main( int argc, char ** argv ) {
 		SDL_GL_SwapWindow( window );
 		SDL_UpdateWindowSurface( window );
 	}
-
+/*
+ * Start USER Code 3
+ */
 	SDL_Log("Fermeture Simulation");
 
 	//Reset du périphérique CUDA
@@ -428,7 +432,9 @@ int main( int argc, char ** argv ) {
 	if (cudaStatus != cudaSuccess) {
 		SDL_Log( "(EE) Unable to reset device\n" );
 	}
-
+/*
+ * End USER Code 3
+ */
 	SDL_GL_DeleteContext( glWindow );
 	DestroyTextRes();
 	SDL_DestroyWindow( window );
