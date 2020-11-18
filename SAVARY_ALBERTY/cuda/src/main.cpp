@@ -231,14 +231,9 @@ int main( int argc, char ** argv ) {
 	omp_set_num_threads( NB_TREADS_OMP );
 
 	cudaError_t cudaStatus;
-	particule_t * Particule_hostDst = NULL;
+	particule_t * Particule_deviceSrc = NULL;
 	particule_t * Particule_deviceDst = NULL;
 
-	Particule_hostDst = (particule_t *)malloc( sizeof( particule_t ) * NB_PARTICULE );
-	Particule_deviceDst = (particule_t *)malloc( sizeof( particule_t ) * NB_PARTICULE );
-	SDL_Log("Allocation environnement : OK");
-
-	
 
 	cudaStatus = cudaSetDevice( 0 );
 
