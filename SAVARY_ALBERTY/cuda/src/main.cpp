@@ -234,9 +234,7 @@ int main( int argc, char ** argv ) {
 	particule_t * Particule_deviceSrc = NULL;
 	particule_t * Particule_deviceDst = NULL;
 
-
 	cudaStatus = cudaSetDevice( 0 );
-
 	if ( cudaStatus != cudaSuccess ) {
 		SDL_Log( "error: unable to setup cuda device\n");
 	}
