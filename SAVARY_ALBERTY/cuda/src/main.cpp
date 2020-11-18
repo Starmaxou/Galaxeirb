@@ -230,17 +230,15 @@ int main( int argc, char ** argv ) {
 
 	omp_set_num_threads( NB_TREADS_OMP );
 
-	particule_t * Particule_hostSrc = NULL;
+	cudaError_t cudaStatus;
 	particule_t * Particule_hostDst = NULL;
-
-	particule_t * Particule_deviceSrc = NULL;
 	particule_t * Particule_deviceDst = NULL;
 
-	Particule_hostSrc = (particule_t *)malloc( sizeof( particule_t ) * NB_PARTICULE );
 	Particule_hostDst = (particule_t *)malloc( sizeof( particule_t ) * NB_PARTICULE );
+	Particule_deviceDst = (particule_t *)malloc( sizeof( particule_t ) * NB_PARTICULE );
 	SDL_Log("Allocation environnement : OK");
 
-	cudaError_t cudaStatus;
+	
 
 	cudaStatus = cudaSetDevice( 0 );
 
@@ -262,6 +260,7 @@ int main( int argc, char ** argv ) {
 
 	CUDA_MEMCPY( Particule_deviceDst, Particules, NB_PARTICULE * sizeof( particule_t ), cudaMemcpyHostToDevice );
 	SDL_Log("Initialisation deviceDst");
+
 	SDL_Log("Init : OK \t Nb Particules : %d", NB_PARTICULE);
 /*
  * End USER Code 0
