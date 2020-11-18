@@ -399,9 +399,11 @@ int main( int argc, char ** argv ) {
 		fps = (float)1.0f / ( ( end.tv_sec - begin.tv_sec ) * 1000000.0f + end.tv_usec - begin.tv_usec) * 1000000.0f;
 /*
  * Start USER Code 2
- */
-		fps_max = (fps > fps_max)? fps : fps_max;
-		fps_min = (fps < fps_min)? fps : fps_min;
+ */		
+		if (g_showSimu){
+	 		fps_max = (fps > fps_max)? fps : fps_max;
+			fps_min = (fps < fps_min)? fps : fps_min;
+ 		}
 /*
  * End USER Code 2
  */
