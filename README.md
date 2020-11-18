@@ -1,4 +1,4 @@
-# Galaxeirb
+# Galaxeirb - Collision intergalactique
 Projet MI205
 Simulation de collision de galaxy
 
