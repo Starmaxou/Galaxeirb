@@ -1,6 +1,9 @@
 #Exclude all
 *
 !*/
+!*/bin
+!*/obj
+!*/src
 !.gitignore
 !Makefile
 
@@ -17,3 +20,4 @@
 !*.md
 !*.png
 !*.jpg
+
