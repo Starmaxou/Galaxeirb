@@ -9,8 +9,8 @@ CUDA_INSTALL_PATH ?= /usr/local/cuda
 INCD 		= -I$(CUDA_INSTALL_PATH)/include
 LIBS 		= -L$(CUDA_INSTALL_PATH)/lib -lcudart
 
-CFLAGS 		= -g -W -Wall -fopenmp -O3
-NFLAGS 		= -O3 -G -g -arch=compute_32
+CFLAGS 		= -W -Wall -fopenmp -O3
+NFLAGS 		= -O3 -arch=compute_32
 LFLAGS 		= -Wall -I. -lm -lGL -lGLEW -lSDL2 -lGLU -fopenmp
 
 SRCDIR 		= src

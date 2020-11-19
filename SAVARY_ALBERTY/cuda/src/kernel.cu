@@ -1,11 +1,11 @@
 #include "cuda.h"
 #include "particule.h"
 
-__global__ void kernel_acceleration( int n, particule_t * in, particule_t * out ) {
+__global__ void kernel_acceleration( int n, particule_t * in) {
 	float sumX, sumY, sumZ ,dX, dY, dZ, distance, masse_invDist3;
 	int i;
-	float g_t = 0.1f;
 	int index = blockIdx.x * blockDim.x + threadIdx.x;
+
 	if ( index < n ) { 
 		sumX = 0;
 		sumY = 0;
@@ -27,18 +27,25 @@ __global__ void kernel_acceleration( int n, particule_t * in, particule_t * out 
 			}
 		}
 
-		out[index].VelX += sumX;
-		out[index].VelY += sumY;
-		out[index].VelZ += sumZ;
-
-		out[index].PosX += out[index].VelX * g_t;
-		out[index].PosY += out[index].VelY * g_t;
-		out[index].PosZ += out[index].VelZ * g_t;
+		in[index].VelX += sumX;
+		in[index].VelY += sumY;
+		in[index].VelZ += sumZ;
 	}
 }
 
-void cuda_calcul_acceleration( int nblocks, int nthreads, int n, particule_t * in, particule_t * out ) {
-	kernel_acceleration<<<nblocks, nthreads>>>( n, in, out );
+__global__ void kernel_actualisation(int n, particule_t * in) {
+	float g_t = 0.1f;
+	int index = blockIdx.x * blockDim.x + threadIdx.x;
+
+	in[index].PosX += in[index].VelX * g_t;
+	in[index].PosY += in[index].VelY * g_t;
+	in[index].PosZ += in[index].VelZ * g_t;
 }
+
+void cuda_calcul_acceleration( int nblocks, int nthreads, int n, particule_t * in ) {
+	kernel_acceleration<<<nblocks, nthreads>>>( n, in);
+	kernel_actualisation<<<nblocks, nthreads>>>( n, in);
+}
+
 
 

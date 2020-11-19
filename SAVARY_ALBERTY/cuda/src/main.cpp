@@ -231,8 +231,7 @@ int main( int argc, char ** argv ) {
 	omp_set_num_threads( NB_TREADS_OMP );
 
 	cudaError_t cudaStatus;
-	particule_t * Particule_deviceSrc = NULL;
-	particule_t * Particule_deviceDst = NULL;
+	particule_t * Particule_device = NULL;
 
 	cudaStatus = cudaSetDevice( 0 );
 	if ( cudaStatus != cudaSuccess ) {
@@ -240,8 +239,7 @@ int main( int argc, char ** argv ) {
 	}
 	SDL_Log("Setup CUDA device : OK");
 
-	CUDA_MALLOC( (void**)&Particule_deviceSrc, NB_PARTICULE * sizeof( particule_t ) );
-	CUDA_MALLOC( (void**)&Particule_deviceDst, NB_PARTICULE * sizeof( particule_t ) );
+	CUDA_MALLOC( (void**)&Particule_device, NB_PARTICULE * sizeof( particule_t ) );
 	SDL_Log("Allocation CUDA : OK");
 
 	if (!initParticules()){
@@ -251,10 +249,10 @@ int main( int argc, char ** argv ) {
 		return -1;
 	}
 
-	CUDA_MEMCPY( Particule_deviceDst, Particules, NB_PARTICULE * sizeof( particule_t ), cudaMemcpyHostToDevice );
-	SDL_Log("Initialisation deviceDst");
+	CUDA_MEMCPY( Particule_device, Particules, NB_PARTICULE * sizeof( particule_t ), cudaMemcpyHostToDevice );
+	SDL_Log("Initialisation Particule_device");
 
-	SDL_Log("Init : OK \t Nb Particules : %d", NB_PARTICULE);
+	SDL_Log("Init <OK> \t Nb Particules : %d \t Threads : %d, Blocks : %d", NB_PARTICULE, numThreads, numBlocks);
 /*
  * End USER Code 0
  */
@@ -286,6 +284,7 @@ int main( int argc, char ** argv ) {
 	}
 
 	SDL_GL_SetSwapInterval( 1 );
+
 
 	while ( !done ) {
   		
@@ -369,17 +368,18 @@ int main( int argc, char ** argv ) {
 		// Simulation should be computed here
 		ShowParticules();
 		if (g_showSimu){
-			CUDA_MEMCPY( Particule_deviceSrc, Particules, NB_PARTICULE * sizeof( particule_t ), cudaMemcpyHostToDevice );
-		
-			cuda_calcul_acceleration(numBlocks, numThreads, NB_PARTICULE, Particule_deviceSrc, Particule_deviceDst);
 
-			CUDA_MEMCPY( Particules, Particule_deviceDst, NB_PARTICULE * sizeof( particule_t ), cudaMemcpyDeviceToHost );
+		
+			cuda_calcul_acceleration(numBlocks, numThreads, NB_PARTICULE, Particule_device);
 
 			cudaStatus = cudaDeviceSynchronize();
 		
 			if ( cudaStatus != cudaSuccess ) {
 				SDL_Log( "error: unable to synchronize threads\n");
 			}
+
+			CUDA_MEMCPY( Particules, Particule_device, NB_PARTICULE * sizeof( particule_t ), cudaMemcpyDeviceToHost );
+
 		}
 
 /*
@@ -425,7 +425,7 @@ int main( int argc, char ** argv ) {
 	}
 /*
  * Start USER Code 3
- */
+ */	SDL_Log("Bilan : %s \t %s",sfpsmax,sfpsmin);
 	SDL_Log("Fermeture Simulation");
 
 	//Reset du périphérique CUDA
