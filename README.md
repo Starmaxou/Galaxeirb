@@ -8,6 +8,18 @@ Ce projet a été réaliser sur une carte de développement **NVIDIA Jetson KT1*
 
 <img align="center" src="Pictures/../SAVARY_ALBERTY/Pictures/NVIDIA_Jetson.jpg" width="300">
 
+## 0 - Utilisation
+```c
+$ make all	// Compilation du projet
+```
+Si erreur de compilation, créée un dossier *obj* dans le dossier *CUDA* et/ou *opengl*.
+Depuis le dossier *SAVARY_ALBERTY* :
+```c
+$ ./cuda/bin/cuda // Démarrage le projet en utilisant CUDA
+```
+```c
+$ ./opengl/bin/opengl	// Lancement du projet en utilisant OpenMP
+```
 ## 1 - Sans optimisation
 - Lecture du fichier dubinski.tab : OK
 - Affichage des galaxies : OK
